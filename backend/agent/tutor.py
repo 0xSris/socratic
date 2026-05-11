@@ -4,8 +4,18 @@ import math
 import random
 from groq import Groq
 
-client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+client: Groq | None = None
 MODEL = "llama-3.3-70b-versatile"
+
+
+def _get_client() -> Groq:
+    global client
+    if client is None:
+        api_key = os.environ.get("GROQ_API_KEY")
+        if not api_key:
+            raise RuntimeError("GROQ_API_KEY is required for tutor generation")
+        client = Groq(api_key=api_key)
+    return client
 
 # ── Prompts ────────────────────────────────────────────────────────────────────
 
@@ -139,7 +149,7 @@ def _clean_json(raw: str) -> str:
 def initialize_graph(topic: str) -> dict:
     """Generate initial concept graph for a topic."""
     try:
-        resp = client.chat.completions.create(
+        resp = _get_client().chat.completions.create(
             model=MODEL,
             messages=[{"role": "user", "content": GRAPH_INIT_PROMPT.format(topic=topic)}],
             max_tokens=1000,
@@ -154,7 +164,7 @@ def initialize_graph(topic: str) -> dict:
 
 def get_first_question(topic: str, goal: str) -> str:
     """Ask the opening Socratic question."""
-    resp = client.chat.completions.create(
+    resp = _get_client().chat.completions.create(
         model=MODEL,
         messages=[{"role": "user", "content": FIRST_QUESTION_PROMPT.format(topic=topic, goal=goal or topic)}],
         max_tokens=200,
@@ -167,7 +177,7 @@ def assess_answer(topic: str, question: str, answer: str) -> dict:
     """Assess a student answer and extract concept evidence."""
     prompt = ASSESS_PROMPT.format(topic=topic, question=question, answer=answer)
     try:
-        resp = client.chat.completions.create(
+        resp = _get_client().chat.completions.create(
             model=MODEL,
             messages=[{"role": "user", "content": prompt}],
             max_tokens=800,
@@ -203,7 +213,7 @@ def get_next_question(
         history=history_text.strip(),
         graph_summary=graph_summary,
     )
-    resp = client.chat.completions.create(
+    resp = _get_client().chat.completions.create(
         model=MODEL,
         messages=[{"role": "user", "content": prompt}],
         max_tokens=200,
