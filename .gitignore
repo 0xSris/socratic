@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.env
+venv/
+*.db
+node_modules/
+.next/
+.vercel/
+frontend/.env.local
+*.tsbuildinfo
+.pytest_cache/
+uploads/
+.DS_Store
